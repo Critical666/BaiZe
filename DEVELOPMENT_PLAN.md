@@ -72,6 +72,16 @@ Document
   created_at: datetime
 ```
 
+### 3.1 身份机制
+
+| 机制 | 说明 |
+|------|------|
+| **角色定义** | `admin`（管理员）与 `user`（普通用户），存储在 `role` 字段 |
+| **用户注册** | 所有自主注册用户默认为 `user`，注册接口不暴露 `role` 参数，由服务端硬编码，防止前端伪造 |
+| **首个管理员** | 系统启动时由 `seed.py` 自动创建，凭证从环境变量 `INIT_ADMIN_*` 读取 |
+| **权限提升** | 管理员通过 `PUT /users/{id}/role` 接口将其他用户提升为 `admin` |
+| **Token 携带** | JWT Payload 中包含 `role` 字段，中间件读取后注入 `current_user`，避免每次查数据库 |
+
 ---
 
 ## 四、API 路由设计
@@ -83,7 +93,13 @@ Document
 | `POST` | `/api/v1/auth/register` | 注册 |
 | `POST` | `/api/v1/auth/login` | 登录，返回 JWT Token |
 
-### 4.2 知识库
+### 4.2 用户管理
+
+| 方法 | 路由 | 说明 | 权限 |
+|------|------|------|------|
+| `PUT` | `/api/v1/users/{id}/role` | 修改用户角色 | admin |
+
+### 4.3 知识库
 
 | 方法 | 路由 | 说明 | 权限 |
 |------|------|------|------|
@@ -92,20 +108,20 @@ Document
 | `GET` | `/api/v1/knowledge-bases/{id}` | 详情（含文档数量） | 登录即可 |
 | `DELETE` | `/api/v1/knowledge-bases/{id}` | 删除（级联删文档和向量） | admin |
 
-### 4.3 文档
+### 4.4 文档
 
 | 方法 | 路由 | 说明 | 权限 |
 |------|------|------|------|
 | `POST` | `/api/v1/knowledge-bases/{id}/documents` | 上传文档（异步触发处理） | 登录即可 |
 | `GET` | `/api/v1/knowledge-bases/{id}/documents` | 文档列表（支持分页） | 登录即可 |
 
-### 4.4 聊天
+### 4.5 聊天
 
 | 方法 | 路由 | 说明 |
 |------|------|------|
 | `POST` | `/api/v1/knowledge-bases/{id}/chat` | 发送消息，返回 RAG 回答 + 来源引用 |
 
-### 4.5 统计
+### 4.6 统计
 
 | 方法 | 路由 | 说明 |
 |------|------|------|
