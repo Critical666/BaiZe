@@ -1,6 +1,6 @@
 # BaiZe 开发计划
 
-> 本文档遵循 [AGENTS.md](./Agent.md) 中定义的开发流程与技术规范，所有开发人员必须阅读。
+> 本文档是遵循 [AGENTS.md](./Agent.md) 中定义的开发流程与技术规范的具体开发指南。
 
 ---
 
@@ -94,10 +94,10 @@ Document
 
 ### 4.3 文档
 
-| 方法 | 路由 | 说明 |
-|------|------|------|
-| `POST` | `/api/v1/knowledge-bases/{id}/documents` | 上传文档（异步触发处理） |
-| `GET` | `/api/v1/knowledge-bases/{id}/documents` | 文档列表（支持分页） |
+| 方法 | 路由 | 说明 | 权限 |
+|------|------|------|------|
+| `POST` | `/api/v1/knowledge-bases/{id}/documents` | 上传文档（异步触发处理） | 登录即可 |
+| `GET` | `/api/v1/knowledge-bases/{id}/documents` | 文档列表（支持分页） | 登录即可 |
 
 ### 4.4 聊天
 
@@ -140,10 +140,10 @@ Celery Worker：
     ↓
 将问题向量化（与文档向量同模型）
     ↓
-Milvus 相似度检索 → Top-K 切块（限定 kb_id）
+Milvus 相似度 + BM25混合检索 → Top-K 切块（限定 kb_id）
     ↓
 构建 Prompt：
-  System: "你是知识库助手，请基于以下文档内容回答..."
+  System: "你是知识库助手，请基于以下文档内容回答...（此处在开发时应该根据prompt工程规范，写的更加完善）"
   Context: 检索到的 K 个文本块（标注来源）
   Question: 用户原始问题
     ↓

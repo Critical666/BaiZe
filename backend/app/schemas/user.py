@@ -1,10 +1,12 @@
 """用户相关数据模型。"""
 
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr, Field
 
 
 class UserCreate(BaseModel):
-    """注册请求。"""
+    """注册请求。所有自主注册的用户默认角色为 user。"""
 
     username: str = Field(..., min_length=3, max_length=64)
     email: EmailStr
@@ -24,7 +26,7 @@ class UserResponse(BaseModel):
     id: str
     username: str
     email: str
-    role: str
+    role: Literal["admin", "user"]
     created_at: str
 
 
@@ -34,3 +36,10 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class UserRoleUpdate(BaseModel):
+    """管理员修改用户角色（仅 admin 可调用）。"""
+
+    role: Literal["admin", "user"]
+

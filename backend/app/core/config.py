@@ -15,5 +15,10 @@ class Settings(BaseSettings):
     secret_key: str = "dev-secret-key"
     access_token_expire_minutes: int = 30
 
+    # 首个管理员账户（系统初始化时自动创建，仅本地/开发环境使用）
+    init_admin_email: str = "admin@baize.com"
+    init_admin_password: str = "admin123"
+    init_admin_username: str = "admin"
+
 
 settings = Settings()
