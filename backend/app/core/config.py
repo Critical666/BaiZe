@@ -23,10 +23,10 @@ class Settings(BaseSettings):
     init_admin_password: str = "admin123"
     init_admin_username: str = "admin"
 
-    # OpenAI LLM 配置
+    # LLM 配置（兼容 OpenAI 协议的 API，如 DeepSeek、OpenAI 等）
     openai_api_key: str = ""
-    openai_base_url: str = "https://api.openai.com/v1"
-    openai_model: str = "gpt-4o-mini"
+    openai_base_url: str = "https://api.deepseek.com"
+    openai_model: str = "deepseek-v4-flash"
 
     # Embedding 配置
     embedding_provider: str = "local"  # "local"（sentence-transformers）或 "openai"
