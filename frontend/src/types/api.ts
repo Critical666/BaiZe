@@ -4,6 +4,7 @@ export interface KnowledgeBaseItem {
   id: string;
   name: string;
   description?: string;
+  document_count?: number;
   owner_id: string;
   created_at: string;
   updated_at: string;

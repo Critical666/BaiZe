@@ -1,13 +1,17 @@
 import { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout as AntLayout, Menu, Button, theme } from 'antd';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import { Layout as AntLayout, Menu, Button, theme, Tag, Dropdown } from 'antd';
 import {
   DatabaseOutlined,
   BarChartOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  UserOutlined,
+  CrownOutlined,
 } from '@ant-design/icons';
+import { useAuth } from '@/hooks/useAuth';
 
 const { Header, Sider, Content } = AntLayout;
 
@@ -15,17 +19,17 @@ export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { token } = theme.useToken();
+  const { token: themeToken } = theme.useToken();
+  const { user, isAdmin, clearAuth } = useAuth();
 
   const menuItems = [
     { key: '/', icon: <DatabaseOutlined />, label: '知识库' },
-    { key: '/stats', icon: <BarChartOutlined />, label: '统计面板' },
+    ...(isAdmin ? [{ key: '/stats', icon: <BarChartOutlined />, label: '统计面板' }] : []),
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
+  const userMenuItems = [
+    { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: clearAuth },
+  ];
 
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
@@ -55,7 +59,7 @@ export default function AppLayout() {
         <Header
           style={{
             padding: '0 24px',
-            background: token.colorBgContainer,
+            background: themeToken.colorBgContainer,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -66,16 +70,21 @@ export default function AppLayout() {
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
           />
-          <Button icon={<LogoutOutlined />} onClick={handleLogout}>
-            退出登录
-          </Button>
+          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+            <Button type="text" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <UserOutlined />
+              <span>{user?.username || '未知用户'}</span>
+              {isAdmin && <Tag color="gold" icon={<CrownOutlined />}>管理员</Tag>}
+              {!isAdmin && <Tag>普通用户</Tag>}
+            </Button>
+          </Dropdown>
         </Header>
         <Content
           style={{
             margin: 24,
             padding: 24,
-            background: token.colorBgContainer,
-            borderRadius: token.borderRadiusLG,
+            background: themeToken.colorBgContainer,
+            borderRadius: themeToken.borderRadiusLG,
             minHeight: 280,
           }}
         >

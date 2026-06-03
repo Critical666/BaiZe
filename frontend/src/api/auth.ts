@@ -1,20 +1,28 @@
 import apiClient from './client';
 
-interface LoginData {
+export interface LoginData {
   email: string;
   password: string;
 }
 
-interface RegisterData {
+export interface RegisterData {
   username: string;
   email: string;
   password: string;
 }
 
+export interface UserInfo {
+  id: string;
+  username: string;
+  email: string;
+  role: 'admin' | 'user';
+  created_at: string;
+}
+
 interface AuthResponse {
   access_token: string;
   token_type: string;
-  user: { id: string; username: string; email: string; role: string; created_at: string };
+  user: UserInfo;
 }
 
 export const login = (data: LoginData) => {

@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 celery_app = Celery(
     "baize",
-    broker="redis://localhost:6379/0",     # 生产环境使用 Redis
-    backend="redis://localhost:6379/0",
+    broker=settings.redis_url,
+    backend=settings.redis_url,
 )
 
 celery_app.conf.update(
@@ -36,6 +36,7 @@ def process_document_task(self, doc_id: str, kb_id: str, filename: str, content:
     from app.utils.parser import parse_document
     from app.utils.chunker import chunk_text
     from app.services.vector_store import vector_store
+    from app.services.embedding_service import encode_texts
 
     db = SessionLocal()
     try:
@@ -55,18 +56,13 @@ def process_document_task(self, doc_id: str, kb_id: str, filename: str, content:
         # 2. 文本切块
         chunks = chunk_text(text)
 
-        # 3. 向量化 + 存储
-        from app.services.chat_service import ChatService
-        chat_service = ChatService()
-        vectors = []
-        for chunk in chunks:
-            vec = chat_service._encode(chunk)
-            vectors.append(vec[0])
-        vectors_array = __import__("numpy").array(vectors)
+        # 3. 向量化（使用真实 Embedding 模型）
+        vectors = encode_texts(chunks)
 
-        vector_store.insert(kb_id, doc_id, filename, chunks, vectors_array)
+        # 4. 写入 Milvus
+        vector_store.insert(kb_id, doc_id, filename, chunks, vectors)
 
-        # 4. 更新文档状态
+        # 5. 更新文档状态
         doc.status = "done"
         doc.chunk_count = len(chunks)
         db.commit()

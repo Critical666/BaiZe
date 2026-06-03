@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Space, Modal, Form, Input, message, Spin } from 'antd';
-import { PlusOutlined, DeleteOutlined, BookOutlined } from '@ant-design/icons';
+import { Card, Button, Space, Modal, Form, Input, message, Spin, Alert, Empty } from 'antd';
+import { PlusOutlined, DeleteOutlined, BookOutlined, FileTextOutlined, FileAddOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { listKnowledgeBases, createKnowledgeBase, deleteKnowledgeBase } from '@/api/knowledge';
+import { useAuth } from '@/hooks/useAuth';
 import type { KnowledgeBaseItem } from '@/types/api';
 
 export default function HomePage() {
@@ -12,6 +13,7 @@ export default function HomePage() {
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   const fetchKBs = async () => {
     setLoading(true);
@@ -19,7 +21,7 @@ export default function HomePage() {
       const data = await listKnowledgeBases();
       setKBs(data);
     } catch {
-      // 后端未启动，用假数据
+      message.error('获取知识库列表失败');
       setKBs([]);
     } finally {
       setLoading(false);
@@ -66,11 +68,21 @@ export default function HomePage() {
 
   return (
     <div>
+      {!isAdmin && (
+        <Alert
+          message="你当前是普通用户，只能查看知识库和上传文档。如需创建/删除知识库，请联系管理员。"
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
         <h2>知识库管理</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-          新建知识库
-        </Button>
+        {isAdmin && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+            新建知识库
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -82,30 +94,59 @@ export default function HomePage() {
               key={kb.id}
               hoverable
               onClick={() => navigate(`/kb/${kb.id}`)}
-              actions={[
-                <DeleteOutlined
-                  key="delete"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(kb.id);
-                  }}
-                  style={{ color: '#ff4d4f' }}
-                />,
-              ]}
+              actions={
+                isAdmin
+                  ? [
+                      <DeleteOutlined
+                        key="delete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(kb.id);
+                        }}
+                        style={{ color: '#ff4d4f' }}
+                      />,
+                    ]
+                  : undefined
+              }
             >
               <Card.Meta
                 avatar={<BookOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
                 title={kb.name}
-                description={kb.description || '暂无描述'}
+                description={
+                  <>
+                    <div style={{ color: '#999', marginBottom: 4 }}>
+                      <FileTextOutlined /> 创建于 {kb.created_at?.split('T')[0]}
+                    </div>
+                    <div style={{ color: '#999', marginBottom: 4 }}>
+                      <FileAddOutlined /> 文档数：{kb.document_count != null ? kb.document_count : '-'}
+                    </div>
+                    <div>{kb.description || '暂无描述'}</div>
+                  </>
+                }
               />
             </Card>
           ))}
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: 80, color: '#999' }}>
-          <BookOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-          <p>暂无知识库，点击上方按钮创建第一个</p>
-        </div>
+        <Empty
+          image={<BookOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />}
+          description={
+            <span>
+              <div style={{ fontSize: 16, color: '#666', marginBottom: 8 }}>
+                {isAdmin ? '还没有知识库，开始创建你的第一个知识库吧' : '暂无知识库，请联系管理员创建'}
+              </div>
+              <div style={{ color: '#999', fontSize: 13 }}>
+                知识库可以帮你管理和检索文档，通过 AI 进行智能问答
+              </div>
+            </span>
+          }
+        >
+          {isAdmin && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+              新建知识库
+            </Button>
+          )}
+        </Empty>
       )}
 
       <Modal

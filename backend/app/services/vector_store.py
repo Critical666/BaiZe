@@ -1,17 +1,21 @@
 """向量存储服务（Milvus Lite 嵌入式模式，零配置持久化）。"""
 
 import logging
+import os
 import time
 
-import numpy as np
-from pymilvus import MilvusClient, DataType
+import uuid
 
-from app.core.config import settings
+import numpy as np
+from pymilvus import MilvusClient
+
+from app.services.embedding_service import EMBEDDING_DIM
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_DIM = 384
-MILVUS_DB_FILE = "./milvus_data/baize.db"   # Milvus Lite 持久化文件
+MILVUS_DB_FILE = os.environ.get(
+    "MILVUS_DB_FILE", "./milvus_data/baize.db"
+)
 COLLECTION_NAME = "knowledge_chunks"
 
 
@@ -61,7 +65,7 @@ class VectorStore:
         data = []
         for i, (chunk, vec) in enumerate(zip(chunks, vectors)):
             data.append({
-                "id": i,
+                "id": int(uuid.uuid4().int & 0x7FFFFFFFFFFFFFFF),
                 "vector": vec.tolist(),
                 "kb_id": kb_id,
                 "doc_id": doc_id,
@@ -73,8 +77,10 @@ class VectorStore:
             collection_name=COLLECTION_NAME,
             data=data,
         )
-        # 插入后需要重新加载才能查询新数据
+        # 插入后刷新并重新加载，确保新数据可被检索
         self.client.flush(COLLECTION_NAME)
+        self.client.release_collection(COLLECTION_NAME)
+        self.client.load_collection(COLLECTION_NAME)
         logger.info("Milvus 向量插入完成: kb=%s, 块数=%d", kb_id, len(chunks))
 
     def search(self, kb_id: str, query_vector: np.ndarray, top_k: int = 5) -> list[dict]:

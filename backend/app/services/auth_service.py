@@ -73,6 +73,28 @@ class AuthService:
             },
         }
 
+    def update_role(self, user_id: str, new_role: str, operator_id: str) -> dict:
+        """修改用户角色（仅管理员可调用）。"""
+        if user_id == operator_id:
+            raise ValueError("不能修改自己的角色")
+
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise ValueError(f"用户 {user_id} 不存在")
+
+        old_role = user.role
+        user.role = new_role
+        self.db.commit()
+        self.db.refresh(user)
+        logger.info("角色变更: %s (%s → %s), 操作者=%s", user.email, old_role, new_role, operator_id)
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "created_at": str(user.created_at),
+        }
+
     def ensure_admin(self):
         """系统启动时调用，确保至少存在一个管理员。"""
         existing = self.db.query(User).filter(User.role == "admin").first()

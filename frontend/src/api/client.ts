@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { UserInfo } from './auth';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
@@ -6,7 +7,6 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// 请求拦截器：自动携带 Token
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -15,10 +15,27 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// 响应拦截器，解包 response.data，调用方直接拿到业务数据
 apiClient.interceptors.response.use(
   (response) => response.data,
-  (error) => Promise.reject(error.response?.data || error),
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error.response?.data || error);
+  },
 );
 
 export default apiClient;
+
+export function getStoredUser(): UserInfo | null {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}

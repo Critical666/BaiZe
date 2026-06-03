@@ -18,7 +18,7 @@ class KnowledgeService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, data: KnowledgeBaseCreate, owner_id: str) -> KnowledgeBase:
+    def create(self, data: KnowledgeBaseCreate, owner_id: str) -> dict:
         """创建知识库。"""
         kb = KnowledgeBase(
             id=str(uuid.uuid4()),
@@ -30,13 +30,31 @@ class KnowledgeService:
         self.db.commit()
         self.db.refresh(kb)
         logger.info("知识库创建: %s (owner=%s)", kb.name, owner_id)
-        return kb
+        return {
+            "id": kb.id,
+            "name": kb.name,
+            "description": kb.description,
+            "owner_id": kb.owner_id,
+            "created_at": str(kb.created_at),
+            "updated_at": str(kb.updated_at),
+        }
 
-    def list_all(self, offset: int = 0, limit: int = 20) -> list[KnowledgeBase]:
+    def list_all(self, offset: int = 0, limit: int = 20) -> list[dict]:
         """获取知识库列表（分页）。"""
-        return self.db.query(KnowledgeBase).order_by(
+        kbs = self.db.query(KnowledgeBase).order_by(
             KnowledgeBase.created_at.desc()
         ).offset(offset).limit(limit).all()
+        return [
+            {
+                "id": kb.id,
+                "name": kb.name,
+                "description": kb.description,
+                "owner_id": kb.owner_id,
+                "created_at": str(kb.created_at),
+                "updated_at": str(kb.updated_at),
+            }
+            for kb in kbs
+        ]
 
     def get_detail(self, kb_id: str) -> dict:
         """获取知识库详情，含文档数量。"""

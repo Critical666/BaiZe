@@ -2,16 +2,18 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Tabs, message } from 'antd';
 import { login, register } from '@/api/auth';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setAuth } = useAuth();
 
-  const handleSubmit = async (values: { username?: string; email: string; password: string }) => {
+  const handleSubmit = async (values: { email: string; password: string }) => {
     setLoading(true);
     try {
       const res = await login({ email: values.email, password: values.password });
-      localStorage.setItem('token', res.access_token);
+      setAuth(res.access_token, res.user);
       message.success('登录成功');
       navigate('/');
     } catch {
@@ -25,7 +27,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await register(values);
-      localStorage.setItem('token', res.access_token);
+      setAuth(res.access_token, res.user);
       message.success('注册成功');
       navigate('/');
     } catch {

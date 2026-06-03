@@ -1,0 +1,48 @@
+version: "3.8"
+
+# 开发环境覆盖配置：挂载源代码（热重载），只启动 Redis
+# 使用方式：docker compose -f docker-compose.dev.yml up
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # 挂载源代码实现热重载
+      - ./backend/app:/app/app
+      - sqlite-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    # 开发模式使用 uvicorn --reload 实现热重载
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis-data:
+  sqlite-data:

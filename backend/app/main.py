@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.endpoints import auth, knowledge, document, chat, stats
 from app.core.database import engine, SessionLocal
@@ -37,6 +38,15 @@ app = FastAPI(
     description="白泽，通万物之情，晓天下之状。基于 RAG 的智能知识库系统。",
     version="0.2.0",
     lifespan=lifespan,
+)
+
+# CORS 配置（开发阶段允许所有来源，生产环境应限制）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 挂载路由

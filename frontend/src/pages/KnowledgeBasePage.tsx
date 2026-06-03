@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Button, Upload, Table, Tag, Space, message, Spin } from 'antd';
-import { ArrowLeftOutlined, MessageOutlined } from '@ant-design/icons';
+import { Card, Button, Upload, Table, Tag, Space, message, Spin, Empty } from 'antd';
+import { ArrowLeftOutlined, MessageOutlined, InboxOutlined } from '@ant-design/icons';
 import { getKnowledgeBaseDetail, listDocuments, uploadDocument } from '@/api/knowledge';
 import type { KnowledgeBaseDetail, DocumentItem } from '@/types/api';
+import type { UploadProps } from 'antd';
+
+const { Dragger } = Upload;
 
 const statusColor: Record<string, string> = {
   pending: 'default',
@@ -25,8 +28,10 @@ export default function KnowledgeBasePage() {
   const [kb, setKb] = useState<KnowledgeBaseDetail | null>(null);
   const [docs, setDocs] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [polling, setPolling] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!id) return;
     try {
       const [kbData, docData] = await Promise.all([
@@ -36,26 +41,64 @@ export default function KnowledgeBasePage() {
       setKb(kbData);
       setDocs(docData);
     } catch {
-      // 后端未启动
+      message.error('获取知识库信息失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchData();
-  }, [id]);
+  }, [fetchData]);
+
+  // 上传后轮询文档状态
+  useEffect(() => {
+    if (!polling) return;
+    const timer = setInterval(async () => {
+      if (!id) return;
+      try {
+        const docData = await listDocuments(id);
+        setDocs(docData);
+        const hasPending = docData.some((d) => d.status === 'pending' || d.status === 'processing');
+        if (!hasPending) {
+          setPolling(false);
+        }
+      } catch {
+        setPolling(false);
+      }
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [polling, id]);
 
   const handleUpload = async (file: File) => {
     if (!id) return;
+    setUploading(true);
     try {
       await uploadDocument(id, file);
-      message.success('上传成功');
-      fetchData();
+      message.success('上传成功，文档正在处理中...');
+      setPolling(true);
+      // 立即刷新一次列表
+      const docData = await listDocuments(id);
+      setDocs(docData);
     } catch {
       message.error('上传失败');
+    } finally {
+      setUploading(false);
     }
-    return false; // 阻止默认上传行为
+    return false;
+  };
+
+  const uploadProps: UploadProps = {
+    name: 'file',
+    multiple: false,
+    accept: '.pdf,.docx,.md,.txt',
+    beforeUpload: () => false,
+    onChange: ({ file }) => {
+      if (file.originFileObj) {
+        handleUpload(file.originFileObj);
+      }
+    },
+    showUploadList: false,
   };
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '120px auto' }} />;
@@ -82,37 +125,55 @@ export default function KnowledgeBasePage() {
       )}
 
       <Card title="文档管理" style={{ marginBottom: 24 }}>
-        <Upload
-          customRequest={({ file }) => handleUpload(file as File)}
-          showUploadList={false}
-          accept=".pdf,.docx,.md,.txt"
-        >
-          <Button type="primary">上传文档</Button>
-        </Upload>
+        <Dragger {...uploadProps} style={{ padding: '16px 0' }}>
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined style={{ color: '#1677ff', fontSize: 40 }} />
+          </p>
+          <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+          <p className="ant-upload-hint" style={{ color: '#999' }}>
+            支持 PDF、Word(.docx)、Markdown、TXT 格式
+          </p>
+        </Dragger>
+        {uploading && (
+          <div style={{ marginTop: 12, textAlign: 'center' }}>
+            <Spin size="small" /> <span style={{ marginLeft: 8, color: '#666' }}>正在上传...</span>
+          </div>
+        )}
       </Card>
 
-      <Table
-        dataSource={docs}
-        rowKey="id"
-        pagination={false}
-        columns={[
-          { title: '文件名', dataIndex: 'filename', key: 'filename' },
-          {
-            title: '大小',
-            dataIndex: 'file_size',
-            key: 'file_size',
-            render: (size: number) => `${(size / 1024).toFixed(1)} KB`,
-          },
-          { title: '切块数', dataIndex: 'chunk_count', key: 'chunk_count' },
-          {
-            title: '状态',
-            dataIndex: 'status',
-            key: 'status',
-            render: (s: string) => <Tag color={statusColor[s]}>{statusText[s]}</Tag>,
-          },
-          { title: '上传时间', dataIndex: 'created_at', key: 'created_at' },
-        ]}
-      />
+      {docs.length > 0 ? (
+        <Table
+          dataSource={docs}
+          rowKey="id"
+          pagination={false}
+          columns={[
+            { title: '文件名', dataIndex: 'filename', key: 'filename' },
+            {
+              title: '大小',
+              dataIndex: 'file_size',
+              key: 'file_size',
+              render: (size: number) => `${(size / 1024).toFixed(1)} KB`,
+            },
+            { title: '切块数', dataIndex: 'chunk_count', key: 'chunk_count' },
+            {
+              title: '状态',
+              dataIndex: 'status',
+              key: 'status',
+              render: (s: string) => <Tag color={statusColor[s]}>{statusText[s]}</Tag>,
+            },
+            { title: '上传时间', dataIndex: 'created_at', key: 'created_at' },
+          ]}
+        />
+      ) : (
+        <Empty
+          image={<InboxOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />}
+          description={
+            <span style={{ color: '#999' }}>
+              暂无文档，请拖拽文件到上方上传区域或点击上传
+            </span>
+          }
+        />
+      )}
     </div>
   );
 }

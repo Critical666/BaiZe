@@ -11,7 +11,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
+    # 数据库
     database_url: str = "sqlite:///./baize.db"
+
+    # JWT 认证
     secret_key: str = "dev-secret-key"
     access_token_expire_minutes: int = 30
 
@@ -19,6 +22,20 @@ class Settings(BaseSettings):
     init_admin_email: str = "admin@baize.com"
     init_admin_password: str = "admin123"
     init_admin_username: str = "admin"
+
+    # OpenAI LLM 配置
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+
+    # Embedding 配置
+    embedding_provider: str = "local"  # "local"（sentence-transformers）或 "openai"
+    embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
+    openai_embedding_model: str = "text-embedding-3-small"
+
+    # Redis / Celery
+    redis_url: str = "redis://localhost:6379/0"
+    use_celery: bool = False  # False 时使用内联同步处理（开发模式）
 
 
 settings = Settings()

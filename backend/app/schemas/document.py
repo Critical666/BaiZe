@@ -1,6 +1,6 @@
 """文档相关数据模型。"""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class DocumentUploadResponse(BaseModel):
@@ -22,3 +22,4 @@ class DocumentResponse(BaseModel):
     chunk_count: int
     status: str  # pending | processing | done | failed
     created_at: str
+    uploaded_by: str
