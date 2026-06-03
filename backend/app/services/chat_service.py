@@ -5,7 +5,7 @@ import time
 
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.vector_store import vector_store
-from app.services.embedding_service import encode_text
+from app.services.embedding_service import encode_query
 from app.services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
@@ -31,8 +31,8 @@ class ChatService:
         """
         start = time.time()
 
-        # 1. 问题向量化
-        query_vector = encode_text(data.question)
+        # 1. 问题向量化（自动添加 BGE 查询指令）
+        query_vector = encode_query(data.question)
 
         # 2. 向量检索
         chunks = vector_store.search(kb_id, query_vector, data.top_k)

@@ -30,7 +30,9 @@ class Settings(BaseSettings):
 
     # Embedding 配置
     embedding_provider: str = "local"  # "local"（sentence-transformers）或 "openai"
-    embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
+    embedding_model: str = "BAAI/bge-large-zh-v1.5"
+    embedding_dim: int = 1024  # BGE-large-zh-v1.5 向量维度
+    embedding_query_instruction: str = "为这个句子生成表示以用于检索相关文章："  # BGE 查询指令
     openai_embedding_model: str = "text-embedding-3-small"
 
     # Redis / Celery

@@ -16,4 +16,5 @@ pymilvus>=3.0.0
 milvus-lite>=3.0.0
 numpy>=1.26.0
 sentence-transformers>=3.0.0
+modelscope>=1.10.0
 openai>=1.0.0
