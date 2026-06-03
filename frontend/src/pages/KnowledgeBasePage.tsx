@@ -77,26 +77,31 @@ export default function KnowledgeBasePage() {
       await uploadDocument(id, file);
       message.success('上传成功，文档正在处理中...');
       setPolling(true);
-      // 立即刷新一次列表
+    } catch {
+      message.error('上传失败，请重试');
+      setUploading(false);
+      return;
+    }
+    setUploading(false);
+
+    // 上传成功后立即刷新列表（独立 try/catch，不覆盖上传提示）
+    try {
       const docData = await listDocuments(id);
       setDocs(docData);
     } catch {
-      message.error('上传失败');
-    } finally {
-      setUploading(false);
+      // 列表刷新失败由轮询兜底，不弹错误提示
     }
-    return false;
   };
 
   const uploadProps: UploadProps = {
     name: 'file',
     multiple: false,
     accept: '.pdf,.docx,.md,.txt',
-    beforeUpload: () => false,
-    onChange: ({ file }) => {
-      if (file.originFileObj) {
-        handleUpload(file.originFileObj);
-      }
+    beforeUpload: (file) => {
+      // 在 beforeUpload 中直接处理上传，file 是原生 File 对象
+      handleUpload(file);
+      // 返回 false 阻止默认上传行为
+      return false;
     },
     showUploadList: false,
   };

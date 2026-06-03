@@ -18,6 +18,7 @@ class Document(Base):
     file_size = Column(Integer, default=0)
     chunk_count = Column(Integer, default=0)
     status = Column(String(20), nullable=False, default="pending")
+    file_path = Column(String(512), nullable=True)  # 上传文件落盘路径
     uploaded_by = Column(String, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 

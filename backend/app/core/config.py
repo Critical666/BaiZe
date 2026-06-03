@@ -37,5 +37,11 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     use_celery: bool = False  # False 时使用内联同步处理（开发模式）
 
+    # Milvus Lite 存储
+    milvus_db_file: str = "./milvus_data/baize.db"
+
+    # 文件上传存储
+    upload_dir: str = "./data/uploads"  # 上传文件落盘目录
+
 
 settings = Settings()

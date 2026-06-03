@@ -24,16 +24,16 @@ class LLMService:
     def __init__(self):
         self._client = None
 
-    def _get_client(self):
-        """获取 OpenAI 客户端单例。"""
-        if self._client is None:
-            from openai import OpenAI
-
-            self._client = OpenAI(
-                api_key=settings.openai_api_key,
-                base_url=settings.openai_base_url,
-            )
-        return self._client
+    def _is_openai_available(self) -> bool:
+        """检查 OpenAI 是否可用（API Key 已配置且非占位符）。"""
+        key = settings.openai_api_key
+        if not key or key == "sk-your-openai-api-key":
+            return False
+        try:
+            import openai  # noqa: F401
+            return True
+        except ImportError:
+            return False
 
     def generate(self, question: str, context: str) -> str:
         """
@@ -46,13 +46,18 @@ class LLMService:
         Returns:
             LLM 生成的回答文本。
         """
-        if not settings.openai_api_key:
-            logger.warning("OpenAI API Key 未配置，使用模板回退方案")
+        if not self._is_openai_available():
+            logger.warning("OpenAI 不可用，使用模板回退方案")
             return self._fallback_answer(question, context)
 
         start = time.time()
         try:
-            client = self._get_client()
+            from openai import OpenAI
+
+            client = OpenAI(
+                api_key=settings.openai_api_key,
+                base_url=settings.openai_base_url,
+            )
 
             response = client.chat.completions.create(
                 model=settings.openai_model,

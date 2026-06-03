@@ -1,7 +1,6 @@
 """向量存储服务（Milvus Lite 嵌入式模式，零配置持久化）。"""
 
 import logging
-import os
 import time
 
 import uuid
@@ -9,13 +8,12 @@ import uuid
 import numpy as np
 from pymilvus import MilvusClient
 
+from app.core.config import settings
 from app.services.embedding_service import EMBEDDING_DIM
 
 logger = logging.getLogger(__name__)
 
-MILVUS_DB_FILE = os.environ.get(
-    "MILVUS_DB_FILE", "./milvus_data/baize.db"
-)
+MILVUS_DB_FILE = settings.milvus_db_file
 COLLECTION_NAME = "knowledge_chunks"
 
 

@@ -26,9 +26,7 @@ export const listDocuments = (kbId: string) => {
 export const uploadDocument = (kbId: string, file: File) => {
   const formData = new FormData();
   formData.append('file', file);
-  return apiClient.post(`/api/v1/knowledge-bases/${kbId}/documents`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  return apiClient.post(`/api/v1/knowledge-bases/${kbId}/documents`, formData);
 };
 
 export const chatWithKB = (kbId: string, question: string) => {
