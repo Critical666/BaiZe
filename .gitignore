@@ -1,15 +1,42 @@
-# Python
+# ===== 环境变量 =====
+.env
+.env.local
+backend/.env
+
+# ===== Python =====
 __pycache__/
 *.pyc
-*.db
-milvus_data/
-.env
+*.pyo
 
-# Node
+# ===== Node =====
 node_modules/
 dist/
+build/
+.vite/
 
-# IDE
+# ===== 数据库 =====
+*.db
+
+# ===== Milvus 向量数据 =====
+milvus_data/
+test_milvus.db/
+
+# ===== 上传文件 =====
+data/uploads/
+
+# ===== IDE =====
 .idea/
 .vscode/
 *.swp
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== 日志 =====
+*.log
+nohup.out
+
+# ===== 临时文件 =====
+*.tmp
+*.bak

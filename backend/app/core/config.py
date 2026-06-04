@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
 
     # 首个管理员账户（系统初始化时自动创建，仅本地/开发环境使用）
-    init_admin_email: str = "admin@baize.com"
-    init_admin_password: str = "admin123"
-    init_admin_username: str = "admin"
+    init_admin_email: str = ""
+    init_admin_password: str = ""
+    init_admin_username: str = ""
 
     # LLM 配置（兼容 OpenAI 协议的 API，如 DeepSeek、OpenAI 等）
     openai_api_key: str = ""
