@@ -18,6 +18,7 @@ class KnowledgeBaseResponse(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
+    document_count: int = 0
     owner_id: str
     created_at: str
     updated_at: str

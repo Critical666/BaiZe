@@ -3,6 +3,7 @@
 import uuid
 import logging
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.document import Document
@@ -35,6 +36,7 @@ class KnowledgeService:
             "id": kb.id,
             "name": kb.name,
             "description": kb.description,
+            "document_count": 0,
             "owner_id": kb.owner_id,
             "created_at": str(kb.created_at),
             "updated_at": str(kb.updated_at),
@@ -45,11 +47,22 @@ class KnowledgeService:
         kbs = self.db.query(KnowledgeBase).order_by(
             KnowledgeBase.created_at.desc()
         ).offset(offset).limit(limit).all()
+        kb_ids = [kb.id for kb in kbs]
+        doc_counts = {
+            row.kb_id: row.cnt
+            for row in self.db.query(
+                Document.kb_id, func.count(Document.id).label("cnt")
+            )
+            .filter(Document.kb_id.in_(kb_ids))
+            .group_by(Document.kb_id)
+            .all()
+        }
         return [
             {
                 "id": kb.id,
                 "name": kb.name,
                 "description": kb.description,
+                "document_count": doc_counts.get(kb.id, 0),
                 "owner_id": kb.owner_id,
                 "created_at": str(kb.created_at),
                 "updated_at": str(kb.updated_at),
