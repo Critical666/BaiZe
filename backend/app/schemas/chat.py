@@ -10,6 +10,7 @@ class ChatRequest(BaseModel):
 
     question: str = Field(..., min_length=1, max_length=4096)
     top_k: int = Field(default=5, ge=1, le=20)
+    new_chat: bool = Field(default=False, description="是否开启新对话（忽略历史上下文）")
 
 
 class ChatResponse(BaseModel):

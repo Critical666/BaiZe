@@ -10,6 +10,9 @@ from app.services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
+# 聊天上下文保留的最大轮数
+MAX_HISTORY_ROUNDS = 10
+
 
 class ChatService:
     """RAG 聊天服务。"""
@@ -24,12 +27,15 @@ class ChatService:
         Args:
             kb_id: 知识库 ID。
             data: 聊天请求。
-            user_id: 当前用户 ID（用于保存聊天记录）。
+            user_id: 当前用户 ID（用于保存聊天记录和加载历史上下文）。
 
         Returns:
             包含回答和来源引用的响应。
         """
         start = time.time()
+
+        # 0. 加载最近聊天历史作为上下文（新对话时跳过）
+        history = [] if data.new_chat else self._load_recent_history(kb_id, user_id)
 
         # 1. 问题向量化（自动添加 BGE 查询指令）
         query_vector = encode_query(data.question)
@@ -55,8 +61,8 @@ class ChatService:
         )
         sources = [f"{c['filename']} (相似度: {c['distance']:.2f})" for c in chunks]
 
-        # 5. LLM 生成回答
-        answer = llm_service.generate(data.question, context)
+        # 5. LLM 生成回答（传入聊天历史）
+        answer = llm_service.generate(data.question, context, history=history)
 
         elapsed_total = time.time() - start
         logger.info(
@@ -69,6 +75,23 @@ class ChatService:
             self._save_history(kb_id, user_id, data.question, answer, sources)
 
         return ChatResponse(answer=answer, sources=sources)
+
+    def _load_recent_history(self, kb_id: str, user_id: str) -> list[dict]:
+        """加载当前知识库的最近聊天记录作为多轮对话上下文。"""
+        if not self.db or not user_id:
+            return []
+        try:
+            from app.services.chat_history_service import ChatHistoryService
+
+            records = ChatHistoryService(self.db).list_by_kb(
+                kb_id, offset=0, limit=MAX_HISTORY_ROUNDS
+            )
+            # list_by_kb 按时间倒序返回，需要反转为正序
+            records.reverse()
+            return records
+        except Exception as e:
+            logger.error("加载聊天历史失败: %s", e)
+            return []
 
     def _save_history(self, kb_id: str, user_id: str, question: str, answer: str, sources: list[str]):
         """保存聊天记录到数据库。"""

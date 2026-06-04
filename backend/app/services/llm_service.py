@@ -35,17 +35,20 @@ class LLMService:
         except ImportError:
             return False
 
-    def generate(self, question: str, context: str) -> str:
+    def generate(self, question: str, context: str, history: list[dict] = None) -> str:
         """
-        基于 RAG 检索到的上下文生成回答。
+        基于 RAG 检索到的上下文生成回答，支持多轮对话。
 
         Args:
             question: 用户问题。
             context: 检索到的文档上下文文本。
+            history: 最近聊天历史记录，包含 question/answer 字段。
 
         Returns:
             LLM 生成的回答文本。
         """
+        history = history or []
+
         if not self._is_openai_available():
             logger.warning("OpenAI 不可用，使用模板回退方案")
             return self._fallback_answer(question, context)
@@ -59,15 +62,22 @@ class LLMService:
                 base_url=settings.openai_base_url,
             )
 
+            messages = [{"role": "system", "content": RAG_SYSTEM_PROMPT}]
+
+            # 注入历史对话轮次作为上下文
+            for record in history:
+                messages.append({"role": "user", "content": record["question"]})
+                messages.append({"role": "assistant", "content": record["answer"]})
+
+            # 当前轮次：RAG 上下文 + 用户问题
+            messages.append({
+                "role": "user",
+                "content": f"参考文档内容：\n\n{context}\n\n---\n\n用户问题：{question}",
+            })
+
             response = client.chat.completions.create(
                 model=settings.openai_model,
-                messages=[
-                    {"role": "system", "content": RAG_SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": f"参考文档内容：\n\n{context}\n\n---\n\n用户问题：{question}",
-                    },
-                ],
+                messages=messages,
                 temperature=0.3,
                 max_tokens=2048,
             )

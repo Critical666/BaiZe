@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Input, Button, Space, Tag, Spin, Typography } from 'antd';
-import { ArrowLeftOutlined, SendOutlined, RobotOutlined, UserOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
-import { chatWithKB } from '@/api/knowledge';
+import { Input, Button, Space, Tag, Spin, Typography, Popconfirm } from 'antd';
+import { ArrowLeftOutlined, SendOutlined, RobotOutlined, UserOutlined, DownOutlined, UpOutlined, PlusOutlined } from '@ant-design/icons';
+import { chatWithKB, getChatHistory } from '@/api/knowledge';
 
 const { Text } = Typography;
 
@@ -28,9 +28,9 @@ const createMessage = (role: 'user' | 'assistant', content: string, sources?: st
 export default function ChatPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([
-    createMessage('assistant', '你好！我是白泽知识库助手，请向我提问。'),
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [isNewChat, setIsNewChat] = useState(false);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -41,6 +41,35 @@ export default function ChatPage() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // 加载聊天历史记录
+  useEffect(() => {
+    if (!id || historyLoaded) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const history = await getChatHistory(id);
+        if (cancelled) return;
+        // history 按时间倒序返回，反转为正序
+        const loaded: Message[] = [];
+        for (const item of [...history].reverse()) {
+          loaded.push(createMessage('user', item.question));
+          loaded.push(createMessage('assistant', item.answer, item.sources));
+        }
+        // 如果没有历史记录，显示欢迎消息
+        setMessages(
+          loaded.length > 0
+            ? loaded
+            : [createMessage('assistant', '你好！我是白泽知识库助手，请向我提问。')],
+        );
+        setHistoryLoaded(true);
+      } catch {
+        setMessages([createMessage('assistant', '你好！我是白泽知识库助手，请向我提问。')]);
+        setHistoryLoaded(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id, historyLoaded]);
 
   useEffect(() => {
     scrollToBottom();
@@ -63,6 +92,13 @@ export default function ChatPage() {
     return timer;
   }, []);
 
+  const handleNewChat = useCallback(() => {
+    setMessages([createMessage('assistant', '你好！我是白泽知识库助手，请向我提问。')]);
+    setIsNewChat(true);
+    setTypingMsgId(null);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, []);
+
   const handleSend = async () => {
     if (!input.trim() || !id) return;
     const question = input;
@@ -79,7 +115,9 @@ export default function ChatPage() {
     setTimeout(() => inputRef.current?.focus(), 100);
 
     try {
-      const res = await chatWithKB(id, question);
+      const res = await chatWithKB(id, question, isNewChat);
+      // 新对话第一条消息发送后，后续不再携带 new_chat 标记
+      setIsNewChat(false);
       const newMsg = createMessage('assistant', res.answer, res.sources);
       setMessages((prev) => {
         const updated = [...prev];
@@ -91,6 +129,7 @@ export default function ChatPage() {
       setTypingMsgId(newMsg.id);
       typewrite(newMsg.id, res.answer);
     } catch {
+      setIsNewChat(false);
       setMessages((prev) => {
         const updated = [...prev];
         const lastIdx = updated.length - 1;
@@ -110,6 +149,15 @@ export default function ChatPage() {
           返回
         </Button>
         <h2 style={{ margin: 0 }}>白泽对话</h2>
+        <Popconfirm
+          title="新建对话"
+          description="将清空当前对话内容，开始一段新对话。确认？"
+          onConfirm={handleNewChat}
+          okText="确认"
+          cancelText="取消"
+        >
+          <Button icon={<PlusOutlined />}>新建对话</Button>
+        </Popconfirm>
       </Space>
 
       {/* 消息区域 */}

@@ -6,7 +6,12 @@ import time
 import uuid
 
 import numpy as np
-from pymilvus import MilvusClient
+from pymilvus import (
+    CollectionSchema,
+    DataType,
+    FieldSchema,
+    MilvusClient,
+)
 
 from app.core.config import settings
 from app.services.embedding_service import EMBEDDING_DIM
@@ -15,6 +20,23 @@ logger = logging.getLogger(__name__)
 
 MILVUS_DB_FILE = settings.milvus_db_file
 COLLECTION_NAME = "knowledge_chunks"
+
+
+def _build_schema(dimension: int) -> CollectionSchema:
+    """构建显式 Collection Schema，确保 kb_id 等字段可用于搜索过滤。
+
+    Milvus Lite 的动态字段（enable_dynamic_field）可以被 query 读取，
+    但无法用于 search 的 filter 条件。因此必须将过滤字段声明为正式字段。
+    """
+    fields = [
+        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=False),
+        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=dimension),
+        FieldSchema(name="kb_id", dtype=DataType.VARCHAR, max_length=128),
+        FieldSchema(name="doc_id", dtype=DataType.VARCHAR, max_length=128),
+        FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=512),
+        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=4096),
+    ]
+    return CollectionSchema(fields=fields, enable_dynamic_field=False)
 
 
 class VectorStore:
@@ -29,13 +51,14 @@ class VectorStore:
         """确保 Collection 存在并已加载。"""
         collections = self.client.list_collections()
         if COLLECTION_NAME not in collections:
+            schema = _build_schema(self.dimension)
             self.client.create_collection(
                 collection_name=COLLECTION_NAME,
-                dimension=self.dimension,
+                schema=schema,
                 metric_type="L2",
             )
             logger.info(
-                "Milvus Lite Collection 已创建: %s, 维度=%d",
+                "Milvus Lite Collection 已创建: %s, 维度=%d (显式Schema)",
                 COLLECTION_NAME,
                 self.dimension,
             )
