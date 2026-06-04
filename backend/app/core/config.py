@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     # Milvus Lite 存储
     milvus_db_file: str = "./milvus_data/baize.db"
 
+    # CORS 允许的来源（逗号分隔，开发环境默认允许全部）
+    cors_origins: str = "*"
+
     # 文件上传存储
     upload_dir: str = "./data/uploads"  # 上传文件落盘目录
 

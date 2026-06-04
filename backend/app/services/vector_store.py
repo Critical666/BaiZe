@@ -129,6 +129,14 @@ class VectorStore:
         )
         logger.info("知识库 %s 的向量已清除", kb_id)
 
+    def delete_by_doc(self, doc_id: str):
+        """删除指定文档的所有向量数据。"""
+        self.client.delete(
+            collection_name=COLLECTION_NAME,
+            filter=f'doc_id == "{doc_id}"',
+        )
+        logger.info("文档 %s 的向量已清除", doc_id)
+
 
 # 全局单例
 vector_store = VectorStore()

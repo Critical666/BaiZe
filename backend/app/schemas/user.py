@@ -1,8 +1,9 @@
 """用户相关数据模型。"""
 
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class UserCreate(BaseModel):
@@ -23,11 +24,21 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     """用户信息响应。"""
 
+    model_config = {"from_attributes": True}
+
     id: str
     username: str
     email: str
     role: Literal["admin", "user"]
     created_at: str
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _coerce_datetime(cls, v: object) -> str:
+        """将 ORM 返回的 datetime 对象转为字符串。"""
+        if isinstance(v, datetime):
+            return str(v)
+        return v
 
 
 class TokenResponse(BaseModel):

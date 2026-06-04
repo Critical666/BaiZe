@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.document import Document
 from app.models.knowledge_base import KnowledgeBase
 from app.schemas.knowledge_base import KnowledgeBaseCreate
+from app.services.vector_store import vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ class KnowledgeService:
         }
 
     def delete(self, kb_id: str) -> bool:
-        """删除知识库及其关联文档。"""
+        """删除知识库及其关联文档，并清理 Milvus 向量数据。"""
         kb = self.db.query(KnowledgeBase).filter(KnowledgeBase.id == kb_id).first()
         if not kb:
             raise ValueError(f"知识库 {kb_id} 不存在")
@@ -82,5 +83,12 @@ class KnowledgeService:
         self.db.query(Document).filter(Document.kb_id == kb_id).delete()
         self.db.delete(kb)
         self.db.commit()
+
+        # 清理 Milvus 中的向量数据，防止残留
+        try:
+            vector_store.delete_by_kb(kb_id)
+        except Exception as e:
+            logger.error("清理知识库向量失败: kb=%s, error=%s", kb_id, e)
+
         logger.info("知识库删除: %s", kb.name)
         return True

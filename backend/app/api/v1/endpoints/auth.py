@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.schemas.user import UserCreate, UserLogin, TokenResponse, UserRoleUpdate, UserResponse
 from app.services.auth_service import AuthService
-from app.api.deps import get_auth_service, require_admin
+from app.api.deps import get_auth_service, get_current_user, require_admin
 from app.models.user import User
 
 router = APIRouter()
@@ -28,8 +28,8 @@ def login(data: UserLogin, service: AuthService = Depends(get_auth_service)):
 
 
 @router.get("/auth/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(require_admin)):
-    """获取当前用户信息（仅管理员）。"""
+def get_me(current_user: User = Depends(get_current_user)):
+    """获取当前登录用户信息。"""
     return current_user
 
 

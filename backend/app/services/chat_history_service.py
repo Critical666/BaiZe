@@ -54,6 +54,39 @@ class ChatHistoryService:
         logger.info("聊天记录已保存: kb=%s, user=%s", kb_id, user_id)
         return record
 
+    def list_by_kb(self, kb_id: str, offset: int = 0, limit: int = 50) -> list[dict]:
+        """
+        获取指定知识库的聊天历史（分页）。
+
+        Args:
+            kb_id: 知识库 ID。
+            offset: 分页偏移量。
+            limit: 每页条数。
+
+        Returns:
+            聊天历史列表，按时间倒序。
+        """
+        records = (
+            self.db.query(ChatHistory)
+            .filter(ChatHistory.kb_id == kb_id)
+            .order_by(ChatHistory.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "id": r.id,
+                "kb_id": r.kb_id,
+                "user_id": r.user_id,
+                "question": r.question,
+                "answer": r.answer,
+                "sources": json.loads(r.sources) if r.sources else [],
+                "created_at": str(r.created_at),
+            }
+            for r in records
+        ]
+
     def count_recent(self, days: int = 7) -> int:
         """
         统计最近 N 天的聊天次数。

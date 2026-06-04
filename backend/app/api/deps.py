@@ -11,6 +11,7 @@ from app.services.auth_service import AuthService
 from app.services.knowledge_service import KnowledgeService
 from app.services.document_service import DocumentService
 from app.services.chat_service import ChatService
+from app.services.chat_history_service import ChatHistoryService
 from app.services.stats_service import StatsService
 
 security_scheme = HTTPBearer()
@@ -57,6 +58,10 @@ def get_document_service(db: Session = Depends(get_db)) -> DocumentService:
 
 def get_chat_service(db: Session = Depends(get_db)) -> ChatService:
     return ChatService(db=db)
+
+
+def get_chat_history_service(db: Session = Depends(get_db)) -> ChatHistoryService:
+    return ChatHistoryService(db)
 
 
 def get_stats_service(db: Session = Depends(get_db)) -> StatsService:

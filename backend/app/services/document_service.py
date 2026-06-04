@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.document import Document
 from app.core.config import settings
+from app.services.vector_store import vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,38 @@ class DocumentService:
             .all()
         )
         return [self._doc_to_dict(d) for d in docs]
+
+    def delete_doc(self, kb_id: str, doc_id: str) -> bool:
+        """删除文档，清理数据库记录、落盘文件和 Milvus 向量。"""
+        doc = (
+            self.db.query(Document)
+            .filter(Document.id == doc_id, Document.kb_id == kb_id)
+            .first()
+        )
+        if not doc:
+            raise ValueError(f"文档 {doc_id} 不存在")
+
+        # 删除落盘文件
+        if doc.file_path:
+            file_dir = os.path.dirname(doc.file_path)
+            if os.path.exists(doc.file_path):
+                os.remove(doc.file_path)
+                logger.info("文档文件已删除: %s", doc.file_path)
+            # 清理空目录
+            if os.path.isdir(file_dir) and not os.listdir(file_dir):
+                os.rmdir(file_dir)
+
+        # 清理 Milvus 向量
+        try:
+            vector_store.delete_by_doc(doc_id)
+        except Exception as e:
+            logger.error("清理文档向量失败: doc=%s, error=%s", doc_id, e)
+
+        # 删除数据库记录
+        self.db.delete(doc)
+        self.db.commit()
+        logger.info("文档已删除: %s (kb=%s)", doc.filename, kb_id)
+        return True
 
     @staticmethod
     def _doc_to_dict(doc: Document) -> dict:

@@ -1,6 +1,6 @@
 """聊天相关数据模型。"""
 
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -17,3 +17,15 @@ class ChatResponse(BaseModel):
 
     answer: str
     sources: List[str] = []
+
+
+class ChatHistoryResponse(BaseModel):
+    """聊天历史记录响应。"""
+
+    id: str
+    kb_id: str
+    user_id: str
+    question: str
+    answer: str
+    sources: List[str] = []
+    created_at: str
