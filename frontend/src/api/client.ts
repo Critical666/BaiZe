@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { UserInfo } from './auth';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   timeout: 60000,
 });
 
