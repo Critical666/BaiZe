@@ -83,7 +83,7 @@ class VectorStore:
 
     def search(self, kb_id: str, query_vector: np.ndarray, top_k: int = 5) -> list[dict]:
         """
-        检索最相似的文本块。
+        检索最相似的文本块（在 Milvus 层按 kb_id 过滤，确保不会漏掉当前知识库的结果）。
 
         Args:
             kb_id: 知识库 ID（用于过滤）。
@@ -94,25 +94,24 @@ class VectorStore:
             包含 text、filename、distance 的结果列表。
         """
         start = time.time()
+        # 在 Milvus 数据库层过滤 kb_id，而非取全局 Top-N 再用 Python 过滤，
+        # 避免"当前 kb 的向量被其他 kb 挤出 Top-N 从而搜不到结果"的问题。
         results = self.client.search(
             collection_name=COLLECTION_NAME,
             data=[query_vector[0].tolist()],
-            limit=top_k * 2,  # 多取一些再过滤 kb_id
+            limit=top_k,
+            filter=f'kb_id == "{kb_id}"',
             output_fields=["kb_id", "filename", "text"],
         )
 
-        # 过滤指定知识库 + 截取 top_k
         hits = []
         for hit in results[0]:
             entity = hit.get("entity", {})
-            if entity.get("kb_id") == kb_id:
-                hits.append({
-                    "text": entity.get("text", ""),
-                    "filename": entity.get("filename", ""),
-                    "distance": hit.get("distance", 0.0),
-                })
-            if len(hits) >= top_k:
-                break
+            hits.append({
+                "text": entity.get("text", ""),
+                "filename": entity.get("filename", ""),
+                "distance": hit.get("distance", 0.0),
+            })
 
         elapsed = time.time() - start
         logger.info(
