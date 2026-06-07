@@ -311,6 +311,5 @@ Harness 工程的本质可以用一句话概括：
 
 白泽项目证明了这一点：3800 行代码、3 天开发周期、从零到部署上线——而人类开发者只做了"写规范、审方案、确认结果"这三件事。
 
----
 
-> 本项目源码：[github.com/Critical666/BaiZe](https://github.com/Critical666/BaiZe)
+---
