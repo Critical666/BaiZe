@@ -2,6 +2,8 @@
 
 > 以一个 99% 代码由 AI 生成的 RAG 知识库项目为实践案例，探讨如何通过"围栏"而非"释放"来驾驭大模型。
 
+> **想要本地部署白泽？** 👉 [点击跳转到部署指南](#部署指南)
+
 ---
 
 ## 写在前面
@@ -314,3 +316,141 @@ Harness 工程的本质可以用一句话概括：
 ---
 
 > 本项目源码：[github.com/Critical666/BaiZe](https://github.com/Critical666/BaiZe)
+
+---
+
+## 部署指南
+
+### 前置条件
+
+| 条件 | 说明 |
+|------|------|
+| 服务器 | Linux 服务器，IP 可访问 |
+| Python | 3.12+ |
+| Node.js | 18+ |
+| Nginx | 用于反向代理和静态资源托管（可选，也可直接访问） |
+| LLM API Key | OpenAI 或兼容的 API Key（用于 AI 问答） |
+
+### 快速开始
+
+**1. 克隆代码**
+
+```bash
+git clone https://github.com/Critical666/BaiZe.git
+cd BaiZe
+```
+
+**2. 配置后端**
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+编辑 `.env`，至少需要配置以下内容：
+
+```bash
+# 必填：LLM API Key（用于 AI 问答）
+OPENAI_API_KEY=sk-your-api-key-here
+OPENAI_BASE_URL=https://api.openai.com/v1   # 可替换为兼容的 API 地址
+
+# 必填：JWT 密钥（随机生成一个长字符串）
+SECRET_KEY=your-random-secret-key
+
+# 可选：管理员初始账户（仅首次启动时生效）
+INIT_ADMIN_EMAIL=admin@example.com
+INIT_ADMIN_USERNAME=admin
+INIT_ADMIN_PASSWORD=your-password
+
+# CORS（生产环境填你的域名）
+CORS_ORIGINS=https://your-domain.com
+```
+
+**3. 启动后端**
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+后端启动后，访问 `http://localhost:8000/docs` 可查看 API 文档。
+
+> 系统首次启动时会自动创建管理员账户（使用 `INIT_ADMIN_*` 配置）。
+
+**4. 构建并启动前端**
+
+```bash
+cd frontend
+npm install
+npm run build
+npm run preview   # 默认端口 4173
+```
+
+前端默认访问 `http://localhost:4173`。
+
+> 如果只想在本地开发调试，可用 `npm run dev`（端口 5173），并设置 `VITE_API_BASE_URL=http://localhost:8000`。
+
+### 生产部署（Nginx 反向代理）
+
+将前端构建产物由 Nginx 托管，API 请求通过反向代理转发到后端：
+
+```bash
+# 构建前端
+cd frontend && npm run build
+
+# 复制到 Nginx 目录
+cp -r dist/* /var/www/rag-frontend/
+```
+
+Nginx 配置示例：
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # 前端静态文件
+    location / {
+        root /var/www/rag-frontend;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 后端 API 反向代理
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+}
+```
+
+```bash
+nginx -t && systemctl reload nginx
+```
+
+### Docker Compose 部署（备选）
+
+```bash
+cp backend/.env.example backend/.env
+# 编辑 .env 填入配置
+
+docker compose up --build -d
+```
+
+> 首次构建需下载 PyTorch（CPU 版 ~532MB），耗时较长。
+
+### 环境变量说明
+
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `SECRET_KEY` | 是 | JWT 签名密钥，随机长字符串 |
+| `OPENAI_API_KEY` | 是 | LLM API Key，问答功能必需 |
+| `OPENAI_BASE_URL` | 否 | API 地址，默认 OpenAI |
+| `CORS_ORIGINS` | 否 | 允许的前端域名，多个用逗号分隔 |
+| `INIT_ADMIN_EMAIL` | 否 | 首次启动时创建的管理员邮箱 |
+| `INIT_ADMIN_USERNAME` | 否 | 首次启动时创建的管理员用户名 |
+| `INIT_ADMIN_PASSWORD` | 否 | 首次启动时创建的管理员密码 |

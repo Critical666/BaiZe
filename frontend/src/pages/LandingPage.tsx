@@ -7,6 +7,7 @@ import {
   SafetyOutlined,
   CloudUploadOutlined,
   RocketOutlined,
+  GithubOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -63,10 +64,22 @@ export default function LandingPage() {
           白泽 BaiZe
         </Title>
         <Paragraph
-          style={{ color: 'rgba(255,255,255,0.85)', fontSize: 20, marginBottom: 40, lineHeight: 1.6 }}
+          style={{ color: 'rgba(255,255,255,0.85)', fontSize: 20, marginBottom: 16, lineHeight: 1.6 }}
         >
           本地部署的 RAG 知识库平台。上传文档，智能问答，数据完全留在本地。
         </Paragraph>
+        <div style={{ marginBottom: 40 }}>
+          <Button
+            type="link"
+            icon={<GithubOutlined />}
+            href="https://github.com/Critical666/BaiZe"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#fff', fontSize: 15, padding: 0 }}
+          >
+            GitHub
+          </Button>
+        </div>
         <Space size={16}>
           <Button
             type="primary"
@@ -211,7 +224,15 @@ export default function LandingPage() {
         }}
       >
         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
-          白泽 BaiZe &mdash; 基于 RAG 的本地知识库平台
+          白泽 BaiZe &mdash; 基于 RAG 的本地知识库平台 &mdash;{' '}
+          <a
+            href="https://github.com/Critical666/BaiZe"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'rgba(255,255,255,0.6)' }}
+          >
+            GitHub
+          </a>
         </Text>
       </div>
     </div>
