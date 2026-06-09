@@ -15,7 +15,7 @@ export default function LoginPage() {
       const res = await login({ email: values.email, password: values.password });
       setAuth(res.access_token, res.user);
       message.success('登录成功');
-      navigate('/');
+      navigate('/home');
     } catch {
       message.error('登录失败，请检查邮箱和密码');
     } finally {
@@ -29,7 +29,7 @@ export default function LoginPage() {
       const res = await register(values);
       setAuth(res.access_token, res.user);
       message.success('注册成功');
-      navigate('/');
+      navigate('/home');
     } catch {
       message.error('注册失败');
     } finally {

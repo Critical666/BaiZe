@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import AppLayout from '@/components/Layout';
+import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import HomePage from '@/pages/HomePage';
 import KnowledgeBasePage from '@/pages/KnowledgeBasePage';
@@ -16,6 +17,10 @@ function RequireAuth() {
 
 const router = createBrowserRouter([
   {
+    path: '/',
+    element: <LandingPage />,
+  },
+  {
     path: '/login',
     element: <LoginPage />,
   },
@@ -26,7 +31,7 @@ const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          { index: true, element: <HomePage /> },
+          { path: 'home', element: <HomePage /> },
           { path: 'kb/:id', element: <KnowledgeBasePage /> },
           { path: 'kb/:id/chat', element: <ChatPage /> },
           { path: 'stats', element: <StatsPage /> },

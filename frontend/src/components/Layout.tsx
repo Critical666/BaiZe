@@ -23,7 +23,7 @@ export default function AppLayout() {
   const { user, isAdmin, clearAuth } = useAuth();
 
   const menuItems = [
-    { key: '/', icon: <DatabaseOutlined />, label: '知识库' },
+    { key: '/home', icon: <DatabaseOutlined />, label: '知识库' },
     ...(isAdmin ? [{ key: '/stats', icon: <BarChartOutlined />, label: '统计面板' }] : []),
   ];
 
